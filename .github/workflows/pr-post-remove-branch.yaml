@@ -40,4 +40,5 @@ jobs:
       - name: 'Remove branch'
         uses: carpentries/actions/remove-branch@main
         with:
-          branch: ${{ env.BRANCH_NAME }}
+          prefix: "pr"  # or whatever your branch naming convention is
+          pr: ${{ env.PR_NUMBER }}
