@@ -3,25 +3,25 @@ name: "Bot: Send Close Pull Request Signal"
 on:
   pull_request:
     types:
-      [closed]
-      
+      - closed
+
 permissions:
   actions: write  # to allow other workflows to access artifacts
   contents: read
-  
+
 jobs:
   send-close-signal:
     name: "Send closing signal"
     runs-on: ubuntu-latest
     if: ${{ github.event.action == 'closed' }}
     steps:
-      - name: "Create PRtifact"
+      - name: "Create PR Artifact"
         run: |
           mkdir -p ./pr
-          printf ${{ github.event.number }} > ./pr/NUM
-      - name: Upload Diff
+          echo -n "${{ github.event.number }}" > ./pr/NUM
+
+      - name: "Upload PR Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: pr
           path: ./pr
-
