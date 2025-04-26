@@ -17,20 +17,26 @@ jobs:
     if: >
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
-    permissions:
-      contents: write
     steps:
       - name: 'Download artifact'
         uses: carpentries/actions/download-workflow-artifact@main
         with:
-          run: ${{ github.event.workflow_run.id }}
+          run_id: ${{ github.event.workflow_run.id }}
           name: pr
+
       - name: "Get PR Number"
         id: get-pr
         run: |
           unzip pr.zip
-          echo "NUM=$(<./NUM)" >> $GITHUB_OUTPUT
+          PR_NUM=$(cat ./NUM)
+          echo "NUM=$PR_NUM" >> $GITHUB_OUTPUT
+
+      - name: "Debug PR number"
+        run: |
+          echo "Downloaded PR number is: ${{ steps.get-pr.outputs.NUM }}"
+
       - name: 'Remove branch'
         uses: carpentries/actions/remove-branch@main
         with:
+          prefix: pr        # <-- You can adjust this if your branch naming prefix is different
           pr: ${{ steps.get-pr.outputs.NUM }}
