@@ -37,10 +37,10 @@ jobs:
 
       - name: "Debug Branch Name"
         run: |
-          echo "Branch name to delete: pr-${{ steps.get-pr.outputs.NUM }}"
+          echo "Branch name to delete: ${{ github.event.pull_request.head.ref }}"
 
       - name: 'Remove branch'
         uses: carpentries/actions/remove-branch@main
         with:
-          prefix: pr         # Adjust this if your branch naming convention differs
-          pr: ${{ steps.get-pr.outputs.NUM }}
+          # Get the head branch dynamically from the PR
+          branch: ${{ github.event.pull_request.head.ref }}
