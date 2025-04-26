@@ -7,8 +7,9 @@ on:
       - completed
 
 permissions:
-  actions: read     # to download artifacts from the triggering workflow
-  contents: write   # to delete branches
+  actions: read
+  contents: write
+  pull-requests: read  # NEW: Needed to read PR info
 
 jobs:
   delete:
@@ -17,6 +18,7 @@ jobs:
     if: >
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
+
     steps:
       - name: 'Download artifact'
         uses: carpentries/actions/download-workflow-artifact@main
@@ -28,19 +30,24 @@ jobs:
         id: get-pr
         run: |
           unzip pr.zip
-          PR_NUM=$(cat ./NUM)
-          echo "NUM=$PR_NUM" >> $GITHUB_OUTPUT
+          echo "NUM=$(<./NUM)" >> $GITHUB_OUTPUT
 
-      - name: "Debug PR number"
+      - name: "Get PR info (branch name)"
+        id: pr-info
         run: |
-          echo "Downloaded PR number is: ${{ steps.get-pr.outputs.NUM }}"
+          echo "Fetching PR info for PR #${{ steps.get-pr.outputs.NUM }}"
+          PR_JSON=$(gh pr view ${{ steps.get-pr.outputs.NUM }} --json headRefName)
+          echo "PR_JSON=$PR_JSON"
+          HEAD_BRANCH=$(echo "$PR_JSON" | jq -r '.headRefName')
+          echo "branch=$HEAD_BRANCH" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Debug Branch Name"
         run: |
-          echo "Branch name to delete: ${{ github.event.pull_request.head.ref }}"
+          echo "Branch name to delete: ${{ steps.pr-info.outputs.branch }}"
 
       - name: 'Remove branch'
         uses: carpentries/actions/remove-branch@main
         with:
-          # Get the head branch dynamically from the PR
-          branch: ${{ github.event.pull_request.head.ref }}
+          branch: ${{ steps.pr-info.outputs.branch }}
