@@ -8,7 +8,7 @@ on:
 
 permissions:
   actions: read     # to download artifacts from the triggering workflow
-  contents: write   # to delete branches...
+  contents: write   # to delete branches
 
 jobs:
   delete:
@@ -35,8 +35,12 @@ jobs:
         run: |
           echo "Downloaded PR number is: ${{ steps.get-pr.outputs.NUM }}"
 
+      - name: "Debug Branch Name"
+        run: |
+          echo "Branch name to delete: pr-${{ steps.get-pr.outputs.NUM }}"
+
       - name: 'Remove branch'
         uses: carpentries/actions/remove-branch@main
         with:
-          prefix: pr        # <-- You can adjust this if your branch naming prefix is different
+          prefix: pr         # Adjust this if your branch naming convention differs
           pr: ${{ steps.get-pr.outputs.NUM }}
