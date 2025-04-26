@@ -9,7 +9,7 @@ on:
 permissions:
   actions: read
   contents: write
-  pull-requests: read  # NEW: Needed to read PR info
+  pull-requests: read  # NEW: Needed to read PR info..
 
 jobs:
   delete:
