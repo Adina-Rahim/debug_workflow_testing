@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ needs.test-pr.outputs.is_valid == 'true' }}
     env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PAT: ${{ secrets.REPO_WORKFLOW_TOKEN }}
       RENV_PATHS_ROOT: ~/.local/share/renv/
       CHIVE: ${{ github.workspace }}/site/chive
       PR: ${{ github.workspace }}/site/pr

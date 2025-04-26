@@ -6,6 +6,10 @@ on:
     types:
       - completed
 
+permissions:
+  actions: read     # to download artifacts from the triggering workflow
+  contents: write   # to delete branches
+
 jobs:
   delete:
     name: "Delete branch from Pull Request"
