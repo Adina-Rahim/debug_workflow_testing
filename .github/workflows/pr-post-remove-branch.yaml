@@ -21,7 +21,7 @@ jobs:
       - name: 'Download artifact'
         uses: carpentries/actions/download-workflow-artifact@main
         with:
-          run_id: ${{ github.event.workflow_run.id }}
+          run: ${{ github.event.workflow_run.id }}
           name: pr
 
       - name: "Get PR Number"
