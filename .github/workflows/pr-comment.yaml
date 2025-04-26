@@ -1,7 +1,5 @@
 name: "Bot: Comment on the Pull Request"
 
-# read-write repo token
-# access to secrets
 on:
   workflow_run:
     workflows: ["Receive Pull Request"]
@@ -9,19 +7,15 @@ on:
       - completed
 
 permissions:
-  contents: write # to checkout, push commits
-  actions: write # to ensure artifact uploads/downloads work across workflows
-  pull-requests: write # to comment on PRs
-  
+  contents: write
+  actions: write
+  pull-requests: write
+
 concurrency:
   group: pr-${{ github.event.workflow_run.pull_requests[0].number }}
   cancel-in-progress: true
 
 jobs:
-  # Pull requests are valid if:
-  #  - they match the sha of the workflow run head commit
-  #  - they are open
-  #  - no .github files were committed
   test-pr:
     name: "Test if pull request is valid"
     runs-on: ubuntu-latest
@@ -49,17 +43,29 @@ jobs:
           echo "NUM=$(<./NR)" >> $GITHUB_OUTPUT
 
       - name: "Fail if PR number was not present"
-        id: bad-pr
         if: ${{ steps.dl.outputs.success != 'true' }}
         run: |
-          echo '::error::A pull request number was not recorded. The pull request that triggered this workflow is likely malicious.'
+          echo '::error::A pull request number was not recorded. Likely malicious or broken.'
           exit 1
+
+      - name: "Double-check PR number matches event"
+        run: |
+          EVENT_PR=${{ github.event.workflow_run.pull_requests[0].number }}
+          ARTIFACT_PR=$(cat ./NR)
+          echo "Event PR Number: $EVENT_PR"
+          echo "Artifact PR Number: $ARTIFACT_PR"
+          if [ "$EVENT_PR" != "$ARTIFACT_PR" ]; then
+            echo "::error::Mismatch! Event PR ($EVENT_PR) != Artifact PR ($ARTIFACT_PR)"
+            exit 1
+          fi
+
       - name: "Get Invalid Hashes File"
         id: hash
         run: |
           echo "json<<EOF
           $(curl -sL https://files.carpentries.org/invalid-hashes.json)
           EOF" >> $GITHUB_OUTPUT
+
       - name: "Check PR"
         id: check-pr
         if: ${{ steps.dl.outputs.success == 'true' }}
@@ -67,14 +73,10 @@ jobs:
         with:
           pr: ${{ steps.get-pr.outputs.NUM }}
           sha: ${{ github.event.workflow_run.head_sha }}
-          headroom: 3 # if it's within the last three commits, we can keep going, because it's likely rapid-fire
+          headroom: 3
           invalid: ${{ fromJSON(steps.hash.outputs.json)[github.repository] }}
           fail_on_error: true
 
-  # Create an orphan branch on this repository with two commits
-  #  - the current HEAD of the md-outputs branch
-  #  - the output from running the current HEAD of the pull request through
-  #    the md generator
   create-branch:
     name: "Create Git Branch"
     needs: test-pr
@@ -82,8 +84,6 @@ jobs:
     if: ${{ needs.test-pr.outputs.is_valid == 'true' }}
     env:
       NR: ${{ needs.test-pr.outputs.number }}
-    permissions:
-      contents: write
     steps:
       - name: 'Checkout md outputs'
         uses: actions/checkout@v3
@@ -120,7 +120,6 @@ jobs:
           git commit --allow-empty -m "differences for PR #${NR}"
           git push -u --force --set-upstream origin md-outputs-PR-${NR}
 
-  # Comment on the Pull Request with a link to the branch and the diff
   comment-pr:
     name: "Comment on Pull Request"
     needs: [test-pr, create-branch]
@@ -128,8 +127,6 @@ jobs:
     if: ${{ needs.test-pr.outputs.is_valid == 'true' }}
     env:
       NR: ${{ needs.test-pr.outputs.number }}
-    permissions:
-      pull-requests: write
     steps:
       - name: 'Download comment artifact'
         id: dl
@@ -149,8 +146,6 @@ jobs:
           pr: ${{ env.NR }}
           path: ${{ github.workspace }}/diff.md
 
-  # Comment if the PR is open and matches the SHA, but the workflow files have
-  # changed
   comment-changed-workflow:
     name: "Comment if workflow files have changed"
     needs: test-pr
@@ -159,8 +154,6 @@ jobs:
     env:
       NR: ${{ github.event.workflow_run.pull_requests[0].number }}
       body: ${{ needs.test-pr.outputs.msg }}
-    permissions:
-      pull-requests: write
     steps:
       - name: 'Check for spoofing'
         id: dl
@@ -186,4 +179,3 @@ jobs:
         with:
           pr: ${{ env.NR }}
           body: ${{ env.body }}
-
