@@ -63,7 +63,7 @@ jobs:
         id: validate
         uses: carpentries/actions/check-valid-credentials@main
         with:
-          token: ${{ secrets.SANDPAPER_WORKFLOW }}
+          token: ${{ secrets.REPO_WORKFLOW_TOKEN }}
 
   update_cache:
     name: "Update Package Cache"
@@ -71,7 +71,7 @@ jobs:
     if: ${{ needs.check_token.outputs.repo== 'true' }}
     runs-on: ubuntu-latest
     env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PAT: ${{ secrets.REPO_WORKFLOW_TOKEN }}
       RENV_PATHS_ROOT: ~/.local/share/renv/
     steps:
 
@@ -95,7 +95,7 @@ jobs:
         if: ${{ steps.update.outputs.n > 0 }}
         uses: carpentries/create-pull-request@main
         with:
-          token: ${{ secrets.SANDPAPER_WORKFLOW }}
+          token: ${{ secrets.REPO_WORKFLOW_TOKEN }}
           delete-branch: true
           branch: "update/packages"
           commit-message: "[actions] update ${{ steps.update.outputs.n }} packages"
